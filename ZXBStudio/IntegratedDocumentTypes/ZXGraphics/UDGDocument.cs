@@ -24,6 +24,8 @@ namespace ZXBasicStudio.IntegratedDocumentTypes.ZXGraphics
         static readonly string _docAspect = "/Svg/Documents/file-udg.svg";
         static readonly Guid _docId = Guid.Parse("468D8D2B-8461-4950-A4C3-8B20454B851A");
 
+        public static Guid Id => _docId;
+
         static readonly UDGDocumentFactory _factory = new UDGDocumentFactory();
         Bitmap? _icon;
 

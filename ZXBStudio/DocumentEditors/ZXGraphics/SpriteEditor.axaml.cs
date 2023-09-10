@@ -90,9 +90,9 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         private string FileName = "";
 
         /// <summary>
-        /// List of sprites properties controls in the set
+        /// List of sprites patterns controls in the set
         /// </summary>
-        private List<SpritePropertiesControl> SpriteControlsList = null;
+        private List<SpritePatternControl> SpritePatternsList = null;
 
         /// <summary>
         /// last zoom value
@@ -202,10 +202,12 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
             FileName = fileName;
 
-            SpriteControlsList = new List<SpritePropertiesControl>();
+            SpritePatternsList = new List<SpritePatternControl>();
             SpriteList_AddSprite();
 
             ctrEditor.Initialize(Editor_Command);
+            ctrlPreview.Initialize(null, SpritePreview_Command);
+            ctrlProperties.Initialize(null, SpriteProperties_Command);
 
             sldZoom.PropertyChanged += SldZoom_PropertyChanged;
 #if NO
@@ -240,22 +242,47 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
         #region SpriteList
 
-        private void SpriteList_Command(SpritePropertiesControl sender, string command)
+        private void SpriteList_Command(SpritePatternControl sender, string command)
         {
             switch (command)
             {
                 case "ADD":
                     SpriteList_AddSprite();
                     ctrEditor.SpriteData = sender.SpriteData;
+                    ctrlPreview.SpriteData = sender.SpriteData;
+                    ctrlProperties.SpriteData = sender.SpriteData;
                     SpriteList_Modified();
                     break;
                 case "SELECTED":
                     SpriteList_Unselect(sender);
                     ctrEditor.SpriteData = sender.SpriteData;
-                    break;
+                    ctrlPreview.SpriteData = sender.SpriteData;
+                    ctrlProperties.SpriteData = sender.SpriteData;
+                    ctrlProperties.Refresh();
+                    break;                
+            }
+        }
+
+
+        private void SpritePreview_Command(SpritePreviewControl sender,string command)
+        {
+
+        }
+
+
+        private void SpriteProperties_Command(SpritePropertiesControl sender,string command)
+        {
+            switch (command)
+            {
                 case "DELETE":
-                    SpriteList_Delete(sender);
-                    SpriteList_Modified();
+                    {
+                        var sprite = SpritePatternsList.FirstOrDefault(d => d.SpriteData!=null && d.SpriteData.Id == sender.SpriteData.Id);
+                        if (sprite != null)
+                        {
+                        SpriteList_Delete(sprite);
+                        SpriteList_Modified();
+                        }
+                    }
                     break;
                 case "CLONE":
                     SpriteList_Clone(sender.SpriteData);
@@ -271,13 +298,13 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
         private void SpriteList_AddSprite()
         {
-            SpritePropertiesControl selectedSprite = null;
+            SpritePatternControl selectedSprite = null;
             int id = 0;
-            if (SpriteControlsList.Count > 0)
+            if (SpritePatternsList.Count > 0)
             {
-                id = SpriteControlsList.Where(d => d.SpriteData != null).Max(d => d.SpriteData.Id) + 1;
+                id = SpritePatternsList.Where(d => d.SpriteData != null).Max(d => d.SpriteData.Id) + 1;
             }
-            foreach (var spc in SpriteControlsList)
+            foreach (var spc in SpritePatternsList)
             {
                 if (spc.SpriteData != null && spc.SpriteData.Id < 0)
                 {
@@ -290,18 +317,19 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
                     break;
                 }
             }
-            var spriteControl = new SpritePropertiesControl();
-            SpriteControlsList.Add(spriteControl);
-            wpSpriteList.Children.Add(spriteControl);
-            spriteControl.Initialize(null, SpriteList_Command);
+
+            var spritePattern = new SpritePatternControl();
+            SpritePatternsList.Add(spritePattern);
+            wpSpriteList.Children.Add(spritePattern);
+            spritePattern.Initialize(null, SpriteList_Command);
 
             SpriteList_Unselect(selectedSprite);
         }
 
 
-        private void SpriteList_Unselect(SpritePropertiesControl selected)
+        private void SpriteList_Unselect(SpritePatternControl selected)
         {
-            foreach (var control in SpriteControlsList)
+            foreach (var control in SpritePatternsList)
             {
                 if (control == selected)
                 {
@@ -315,9 +343,9 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         }
 
 
-        private void SpriteList_Delete(SpritePropertiesControl control)
+        private void SpriteList_Delete(SpritePatternControl control)
         {
-            SpriteControlsList.Remove(control);
+            SpritePatternsList.Remove(control);
             wpSpriteList.Children.Remove(control);
             control = null;
         }
@@ -325,9 +353,9 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
         private void SpriteList_Clone(Sprite spriteData)
         {
-            SpritePropertiesControl selectedSprite = null;
-            int id = SpriteControlsList.Where(d => d.SpriteData != null).Max(d => d.SpriteData.Id) + 1;
-            var spc = SpriteControlsList.FirstOrDefault(d => d.SpriteData == null);
+            SpritePatternControl selectedSprite = null;
+            int id = SpritePatternsList.Where(d => d.SpriteData != null).Max(d => d.SpriteData.Id) + 1;
+            var spc = SpritePatternsList.FirstOrDefault(d => d.SpriteData == null);
             if (spc == null)
             {
                 return;
@@ -337,10 +365,10 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
             sd.Name = spriteData.Name + " - copy";
             spc.SpriteData = sd;
 
-            var spriteControl = new SpritePropertiesControl();
-            SpriteControlsList.Add(spriteControl);
-            wpSpriteList.Children.Add(spriteControl);
-            spriteControl.Initialize(null, SpriteList_Command);
+            var spritePattern = new SpritePatternControl();
+            SpritePatternsList.Add(spritePattern);
+            wpSpriteList.Children.Add(spritePattern);
+            spritePattern.Initialize(null, SpriteList_Command);
 
             spc.Select();
         }
@@ -364,7 +392,7 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
             {
                 case "REFRESH":
                     {
-                        var cur = SpriteControlsList.FirstOrDefault(d => d.IsSelected);
+                        var cur = SpritePatternsList.FirstOrDefault(d => d.IsSelected);
                         if (cur != null)
                         {
                             cur.Refresh();

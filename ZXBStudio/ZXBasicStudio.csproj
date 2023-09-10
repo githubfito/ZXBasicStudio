@@ -503,6 +503,12 @@
     <Compile Update="DocumentEditors\ZXGraphics\FontGDUExportDialog.axaml.cs">
       <DependentUpon>FontGDUExportDialog.axaml</DependentUpon>
     </Compile>
+    <Compile Update="DocumentEditors\ZXGraphics\SpritePatternControl.axaml.cs">
+      <DependentUpon>SpritePatternControl.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="DocumentEditors\ZXGraphics\SpritePreviewControl.axaml.cs">
+      <DependentUpon>SpritePreviewControl.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Emulator\Controls\ZXKeyView.axaml.cs">
       <DependentUpon>ZXKeyView.axaml</DependentUpon>
     </Compile>

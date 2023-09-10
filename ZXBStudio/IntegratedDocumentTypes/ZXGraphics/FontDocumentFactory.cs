@@ -62,7 +62,7 @@ namespace ZXBasicStudio.IntegratedDocumentTypes.ZXGraphics
                 OutputLog.WriteLine($"Document {Path} is not a font file, internal document handling error, operation aborted.");
                 return null;
             }
-            FontGDUEditor editor = new FontGDUEditor(Path);
+            FontGDUEditor editor = new FontGDUEditor(Path,FontDocument.Id);
             return editor;
         }
     }

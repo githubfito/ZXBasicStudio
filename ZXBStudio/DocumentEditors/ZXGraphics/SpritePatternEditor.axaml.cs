@@ -274,7 +274,7 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
             {
                 tmr = new DispatcherTimer();
                 tmr.Tick += Tmr_Tick;
-                tmr.Interval = TimeSpan.FromMilliseconds(1000);
+                tmr.Interval = TimeSpan.FromMilliseconds(250);
             }
             tmr.Stop();
             tmr.Start();            

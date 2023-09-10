@@ -38,6 +38,23 @@ namespace ZXBasicStudio.IntegratedDocumentTypes.ZXGraphics
 
         private static readonly ExportManager _exportManager = new ExportManager();
 
+        static readonly ZXKeybCommand[] _editCommands = new ZXKeybCommand[]
+        {
+            ZXTextEditor.keyboardCommands["Save"],
+            ZXTextEditor.keyboardCommands["Copy"],
+            ZXTextEditor.keyboardCommands["Cut"],
+            ZXTextEditor.keyboardCommands["Paste"],
+            ZXTextEditor.keyboardCommands["Select"],
+            ZXTextEditor.keyboardCommands["Undo"],
+            ZXTextEditor.keyboardCommands["Redo"],
+            ZXTextEditor.keyboardCommands["Find"],
+            ZXTextEditor.keyboardCommands["Replace"],
+            ZXTextEditor.keyboardCommands["Collapse"],
+            ZXTextEditor.keyboardCommands["Expand"],
+            ZXTextEditor.keyboardCommands["Comment"],
+            ZXTextEditor.keyboardCommands["Uncomment"]
+        };
+
 
         public FontDocument()
         {
@@ -70,7 +87,6 @@ namespace ZXBasicStudio.IntegratedDocumentTypes.ZXGraphics
 
         Guid IZXDocumentType.DocumentTypeId => _docId;
 
-        // TODO: Implement commands
-        public ZXKeybCommand[]? EditorCommands => new ZXKeybCommand[0];
+        ZXKeybCommand[]? IZXDocumentType.EditorCommands => new ZXKeybCommand[0];
     }
 }

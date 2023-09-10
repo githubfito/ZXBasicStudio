@@ -118,6 +118,12 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
             cnvEditor.PointerPressed += CnvEditor_PointerPressed;
             cnvEditor.PointerReleased += CnvEditor_PointerReleased;
             cnvEditor.PointerExited += CnvEditor_PointerExited;
+            cnvEditor.KeyDown += CnvEditor_KeyDown;
+        }
+
+        private void CnvEditor_KeyDown(object? sender, KeyEventArgs e)
+        {
+            
         }
 
 

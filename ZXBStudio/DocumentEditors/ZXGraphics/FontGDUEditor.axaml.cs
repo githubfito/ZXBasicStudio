@@ -12,6 +12,7 @@ using ZXBasicStudio.Classes;
 using AvaloniaEdit.Folding;
 using Avalonia.Threading;
 using ZXBasicStudio.DocumentEditors.ZXTextEditor.Classes.Folding;
+using Avalonia.Input;
 
 namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 {
@@ -117,6 +118,8 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         private FoldingManager? fManager;
         private DispatcherTimer? updateFoldingsTimer;
 
+        private Guid documentTypeId = Guid.Empty;
+
         #endregion
 
 
@@ -164,10 +167,6 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         }
 
 
-        public override void Dispose()
-        {
-        }
-
         #endregion
 
 
@@ -187,9 +186,10 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         /// Constructor
         /// </summary>
         /// <param name="fileName">Name of the file</param>
-        public FontGDUEditor(string fileName)
+        public FontGDUEditor(string fileName, Guid documentTypeId)
         {
             InitializeComponent();
+            this.documentTypeId = documentTypeId;
             Initialize(fileName);
         }
 
@@ -240,7 +240,42 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
             btnInvert.Tapped += BtnInvert_Tapped;
             btnMask.Tapped += BtnMask_Tapped;
             btnExport.Tapped += BtnExport_Tapped;
+
+            this.KeyDown += Keyboard_Down;
+            ctrEditor.KeyDown += Keyboard_Down;
+
             return true;
+        }
+
+
+        public override void Dispose()
+        {
+            sldZoom.PropertyChanged -= SldZoom_PropertyChanged;
+            txtEditorWidth.ValueChanged -= TxtEditorWidth_ValueChanged;
+            txtEditorHeight.ValueChanged -= TxtEditorHeight_ValueChanged;
+
+            btnClear.Tapped -= BtnClear_Tapped;
+            btnCut.Tapped -= BtnCut_Tapped;
+            btnCopy.Tapped -= BtnCopy_Tapped;
+            btnPaste.Tapped -= BtnPaste_Tapped;
+            btnHMirror.Tapped -= BtnHMirror_Tapped;
+            btnVMirror.Tapped -= BtnVMirror_Tapped;
+            btnRotateLeft.Tapped -= BtnRotateLeft_Tapped;
+            btnRotateRight.Tapped -= BtnRotateRight_Tapped;
+            btnShiftUp.Tapped -= BtnShiftUp_Tapped;
+            btnShiftRight.Tapped -= BtnShiftRight_Tapped;
+            btnShiftDown.Tapped -= BtnShiftDown_Tapped;
+            btnShiftLeft.Tapped -= BtnShiftLeft_Tapped;
+            btnMoveUp.Tapped -= BtnMoveUp_Tapped;
+            btnMoveRight.Tapped -= BtnMoveRight_Tapped;
+            btnMoveDown.Tapped -= BtnMoveDown_Tapped;
+            btnMoveLeft.Tapped -= BtnMoveLeft_Tapped;
+            btnInvert.Tapped -= BtnInvert_Tapped;
+            btnMask.Tapped -= BtnMask_Tapped;
+            btnExport.Tapped -= BtnExport_Tapped;
+
+            this.KeyDown -= Keyboard_Down;
+            ctrEditor.KeyDown -= Keyboard_Down;
         }
 
 
@@ -623,5 +658,16 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         #endregion
 
 
+        #region Keyboard shortcus
+
+        private void Keyboard_Down(object? sender, Avalonia.Input.KeyEventArgs e)
+        {
+            var commandId = ZXKeybMapper.GetCommandId(documentTypeId, e.Key, e.KeyModifiers);
+
+            //if (commandId != null && _keybCommands.ContainsKey(commandId.Value))
+            //    _keybCommands[commandId.Value]();
+        }
+
+        #endregion
     }
 }

@@ -63,7 +63,7 @@ namespace ZXBasicStudio.IntegratedDocumentTypes.ZXGraphics
                 OutputLog.WriteLine($"Document {Path} is not a UDG file, internal document handling error, operation aborted.");
                 return null;
             }
-            FontGDUEditor editor = new FontGDUEditor(Path);
+            FontGDUEditor editor = new FontGDUEditor(Path,UDGDocument.Id);
             return editor;
         }
     }

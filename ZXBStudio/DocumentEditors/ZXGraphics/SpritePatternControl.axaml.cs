@@ -10,7 +10,7 @@ using ZXBasicStudio.DocumentEditors.ZXGraphics.neg;
 
 namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 {
-    public partial class SpritePropertiesControl : UserControl
+    public partial class SpritePatternControl : UserControl
     {
         #region Public properties
 
@@ -34,7 +34,7 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         /// <summary>
         /// CallBack for commands: "ADD", "CLONE", "DELETE", "SELECT", "MODE", "SIZE"
         /// </summary>
-        public Action<SpritePropertiesControl, string> CallBackCommand { get; set; }
+        public Action<SpritePatternControl, string> CallBackCommand { get; set; }
 
         /// <summary>
         /// True when then control is selected
@@ -84,10 +84,9 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
         #region Constructor and public methods
 
-        public SpritePropertiesControl()
+        public SpritePatternControl()
         {
             InitializeComponent();
-            Refresh();
         }
 
 
@@ -97,23 +96,14 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         /// <param name="spriteData">Data of the sprite, if is null, the "Add" icon is visible and no properties are shown</param>
         /// <param name="callBackCommand">CallBak for actions command, line "ADD", "CLONE", "DELETE" or "SELECTED"</param>
         /// <returns></returns>
-        public bool Initialize(Sprite spriteData, Action<SpritePropertiesControl, string> callBackCommand)
+        public bool Initialize(Sprite spriteData, Action<SpritePatternControl, string> callBackCommand)
         {
             this.SpriteData = spriteData;
             this.CallBackCommand = callBackCommand;
 
-            btnApply.Tapped += BtnApply_Tapped;
-            btnCancel.Tapped += BtnCancel_Tapped;
-            btnClone.Tapped += BtnClone_Tapped;
-            btnDelete.Tapped += BtnDelete_Tapped;
+            this.PointerPressed += SpritePropertiesControl_PointerPressed;
 
-            txtFrames.ValueChanged += TxtFrames_ValueChanged;
-            txtHeight.ValueChanged += TxtHeight_ValueChanged;
-            txtName.TextChanged += TxtName_TextChanged;
-            txtWidth.ValueChanged += TxtWidth_ValueChanged;
-            chkExport.IsCheckedChanged += ChkExport_IsCheckedChanged;
-            chkMasked.IsCheckedChanged += ChkMasked_IsCheckedChanged;
-            cmbMode.SelectionChanged += CmbMode_SelectionChanged;
+            btnNew.Tapped += BtnNew_Tapped;
 
             _SettingsChanged = false;
             newSprite = true;
@@ -134,25 +124,28 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
             try
             {
+                RefreshButtons();
+
                 if (SpriteData == null)
                 {
-                    pnlProperties.IsVisible = false;
+                    pnlNew.IsVisible = true;
+                    pnlPreview.IsVisible = false;
                     return;
+                }
+
+                if (_IsSelected)
+                {
+                    brdMain.BorderBrush = new SolidColorBrush(Colors.Red);
                 }
                 else
                 {
-                    pnlProperties.IsVisible = true;
+                    brdMain.BorderBrush = new SolidColorBrush(Colors.Gray);
                 }
 
-                RefreshButtons();
+                pnlNew.IsVisible = false;
 
-                txtFrames.Value = SpriteData.Frames;
-                txtHeight.Value = SpriteData.Height;
-                txtId.Text = SpriteData.Id == -1 ? "---" : SpriteData.Id.ToString();
-                txtName.Text = SpriteData.Name;
-                txtWidth.Value = SpriteData.Width;
-                chkMasked.IsCancel = SpriteData.Masked;
-                cmbMode.SelectedIndex = (byte)SpriteData.GraphicMode;
+                pnlPreview.IsVisible = true;
+                lblName.Text = SpriteData.Name;
 
                 if (SpriteData.Patterns == null || SpriteData.Patterns.Count == 0)
                 {
@@ -169,6 +162,33 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
                 {
                     SpriteData.Palette = ServiceLayer.GetPalette(SpriteData.GraphicMode);
                 }
+
+                for (int y = 0; y < SpriteData.Height; y++)
+                {
+                    for (int x = 0; x < SpriteData.Width; x++)
+                    {
+                        int colorIndex = 0;
+
+                        var frame = SpriteData.Patterns[SpriteData.CurrentFrame];
+                        var p = frame.Data.FirstOrDefault(d => d.X == x && d.Y == y);
+                        if (p != null)
+                        {
+                            colorIndex = p.ColorIndex;
+                        }
+
+                        var r = new Rectangle();
+                        r.Width = 4;
+                        r.Height = 4;
+
+                        var palette = SpriteData.Palette[colorIndex];
+                        r.Fill = new SolidColorBrush(new Color(255, palette.Red, palette.Green, palette.Blue));
+                        var r2 = r.Clonar<Rectangle>();
+
+                        cnvPreview.Children.Add(r);
+                        Canvas.SetTop(r, y * 4);
+                        Canvas.SetLeft(r, x * 4);
+                    }
+                }
             }
             catch { }
             finally
@@ -180,10 +200,6 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
         private void RefreshButtons()
         {
-            btnApply.IsVisible = _SettingsChanged;
-            btnCancel.IsVisible = _SettingsChanged;
-            btnClone.IsVisible = !newSprite;
-            btnDelete.IsVisible = !_SettingsChanged;
         }
 
 
@@ -204,12 +220,6 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
             else
             {
                 var sp = SpriteData.Clonar<Sprite>();
-                sp.Frames = txtFrames.Value.ToByte();
-                sp.GraphicMode = (GraphicsModes)cmbMode.SelectedIndex;
-                sp.Height = txtHeight.Value.ToByte();
-                sp.Masked = chkMasked.IsChecked.ToBoolean();
-                sp.Name = txtName.Text;
-                sp.Width = txtWidth.Value.ToByte();
 
                 if (sp.Width != SpriteData.Width || sp.Height != SpriteData.Height)
                 {
@@ -314,67 +324,15 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
         #region Button events
 
-        private void ChkExport_IsCheckedChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        private void BtnNew_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
         {
-            SpriteData.Export = chkExport.IsChecked.ToBoolean();
+            AddNew();
         }
 
 
-        private void ChkMasked_IsCheckedChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        private void SpritePropertiesControl_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
         {
-            SettingsChanged = true;
-        }
-
-
-        private void CmbMode_SelectionChanged(object? sender, SelectionChangedEventArgs e)
-        {
-            SettingsChanged = true;
-        }
-
-
-        private void TxtWidth_ValueChanged(object? sender, NumericUpDownValueChangedEventArgs e)
-        {
-            SettingsChanged = true;
-        }
-
-        private void TxtHeight_ValueChanged(object? sender, NumericUpDownValueChangedEventArgs e)
-        {
-            SettingsChanged = true;
-        }
-
-        private void TxtName_TextChanged(object? sender, TextChangedEventArgs e)
-        {
-            SpriteData.Name = txtName.Text;
-        }
-
-        private void TxtFrames_ValueChanged(object? sender, NumericUpDownValueChangedEventArgs e)
-        {
-            SettingsChanged = true;
-        }
-
-
-        private void BtnDelete_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
-        {
-            CallBackCommand(this, "DELETE");
-        }
-
-
-        private void BtnClone_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
-        {
-            CallBackCommand(this, "CLONE");
-        }
-
-
-        private void BtnCancel_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
-        {
-            Refresh();
-            SettingsChanged = false;
-        }
-
-
-        private void BtnApply_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
-        {
-            ApplySettings(true);
+            Select();
         }
 
         #endregion

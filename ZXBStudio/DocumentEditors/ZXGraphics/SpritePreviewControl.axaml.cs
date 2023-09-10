@@ -10,7 +10,7 @@ using ZXBasicStudio.DocumentEditors.ZXGraphics.neg;
 
 namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 {
-    public partial class SpritePropertiesControl : UserControl
+    public partial class SpritePreviewControl : UserControl
     {
         #region Public properties
 
@@ -34,7 +34,7 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         /// <summary>
         /// CallBack for commands: "ADD", "CLONE", "DELETE", "SELECT", "MODE", "SIZE"
         /// </summary>
-        public Action<SpritePropertiesControl, string> CallBackCommand { get; set; }
+        public Action<SpritePreviewControl, string> CallBackCommand { get; set; }
 
         /// <summary>
         /// True when then control is selected
@@ -84,10 +84,9 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
         #region Constructor and public methods
 
-        public SpritePropertiesControl()
+        public SpritePreviewControl()
         {
             InitializeComponent();
-            Refresh();
         }
 
 
@@ -97,15 +96,18 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
         /// <param name="spriteData">Data of the sprite, if is null, the "Add" icon is visible and no properties are shown</param>
         /// <param name="callBackCommand">CallBak for actions command, line "ADD", "CLONE", "DELETE" or "SELECTED"</param>
         /// <returns></returns>
-        public bool Initialize(Sprite spriteData, Action<SpritePropertiesControl, string> callBackCommand)
+        public bool Initialize(Sprite spriteData, Action<SpritePreviewControl, string> callBackCommand)
         {
             this.SpriteData = spriteData;
             this.CallBackCommand = callBackCommand;
+
+            this.PointerPressed += SpritePropertiesControl_PointerPressed;
 
             btnApply.Tapped += BtnApply_Tapped;
             btnCancel.Tapped += BtnCancel_Tapped;
             btnClone.Tapped += BtnClone_Tapped;
             btnDelete.Tapped += BtnDelete_Tapped;
+            btnNew.Tapped += BtnNew_Tapped;
 
             txtFrames.ValueChanged += TxtFrames_ValueChanged;
             txtHeight.ValueChanged += TxtHeight_ValueChanged;
@@ -134,27 +136,38 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
             try
             {
+                RefreshButtons();
+
                 if (SpriteData == null)
                 {
+                    pnlNew.IsVisible = true;
                     pnlProperties.IsVisible = false;
+                    pnlPreview.IsVisible = false;
                     return;
+                }
+
+                pnlNew.IsVisible = false;
+                if (_IsSelected)
+                {
+                    pnlProperties.IsVisible = true;
+                    pnlPreview.IsVisible = false;
+
+                    txtFrames.Value = SpriteData.Frames;
+                    txtHeight.Value = SpriteData.Height;
+                    txtId.Text = SpriteData.Id == -1 ? "---" : SpriteData.Id.ToString();
+                    txtName.Text = SpriteData.Name;
+                    txtWidth.Value = SpriteData.Width;
+                    chkMasked.IsCancel = SpriteData.Masked;
+                    cmbMode.SelectedIndex = (byte)SpriteData.GraphicMode;
                 }
                 else
                 {
-                    pnlProperties.IsVisible = true;
+                    pnlProperties.IsVisible = false;
+                    pnlPreview.IsVisible = true;
+                    lblName.Text = SpriteData.Name;
                 }
 
-                RefreshButtons();
-
-                txtFrames.Value = SpriteData.Frames;
-                txtHeight.Value = SpriteData.Height;
-                txtId.Text = SpriteData.Id == -1 ? "---" : SpriteData.Id.ToString();
-                txtName.Text = SpriteData.Name;
-                txtWidth.Value = SpriteData.Width;
-                chkMasked.IsCancel = SpriteData.Masked;
-                cmbMode.SelectedIndex = (byte)SpriteData.GraphicMode;
-
-                if (SpriteData.Patterns == null || SpriteData.Patterns.Count == 0)
+                if(SpriteData.Patterns==null || SpriteData.Patterns.Count == 0)
                 {
                     SpriteData.Patterns = new List<Pattern>();
                     SpriteData.Patterns.Add(new Pattern()
@@ -165,9 +178,40 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
                         Number = ""
                     });
                 }
-                if (SpriteData.Palette == null || SpriteData.Palette.Length == 0)
+                if(SpriteData.Palette==null || SpriteData.Palette.Length == 0)
                 {
                     SpriteData.Palette = ServiceLayer.GetPalette(SpriteData.GraphicMode);
+                }
+
+                for (int y = 0; y < SpriteData.Height; y++)
+                {
+                    for (int x = 0; x < SpriteData.Width; x++)
+                    {
+                        int colorIndex = 0;
+
+                        var frame = SpriteData.Patterns[SpriteData.CurrentFrame];
+                        var p = frame.Data.FirstOrDefault(d => d.X == x && d.Y == y);
+                        if (p != null)
+                        {
+                            colorIndex = p.ColorIndex;
+                        }
+
+                        var r = new Rectangle();
+                        r.Width = 4;
+                        r.Height = 4;
+
+                        var palette = SpriteData.Palette[colorIndex];
+                        r.Fill = new SolidColorBrush(new Color(255, palette.Red, palette.Green, palette.Blue));
+                        var r2 = r.Clonar<Rectangle>();
+
+                        cnvPreview.Children.Add(r);
+                        Canvas.SetTop(r, y * 4);
+                        Canvas.SetLeft(r, x * 4);
+
+                        cnvPoints.Children.Add(r2);
+                        Canvas.SetTop(r2, y * 4);
+                        Canvas.SetLeft(r2, x * 4);
+                    }
                 }
             }
             catch { }
@@ -229,7 +273,7 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
                 }
                 if (sp.Masked != SpriteData.Masked)
                 {
-                    if (!ServiceLayer.SpriteData_ChangeMasked(ref sp, SpriteData.Masked))
+                    if(!ServiceLayer.SpriteData_ChangeMasked(ref sp, SpriteData.Masked))
                     {
                         // TODO: Report error
                         return;
@@ -313,6 +357,18 @@ namespace ZXBasicStudio.DocumentEditors.ZXGraphics
 
 
         #region Button events
+
+        private void BtnNew_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
+        {
+            AddNew();
+        }
+
+
+        private void SpritePropertiesControl_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+        {
+            Select();
+        }
+
 
         private void ChkExport_IsCheckedChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
